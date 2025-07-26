@@ -1,13 +1,185 @@
 # Books API Documentation
 
-Welcome to the Laravel 12 Books API! This is a simple RESTful API for managing books.
+Welcome to the Laravel 12 Books API! This is a simple RESTful API for managing books with JWT authentication.
+
+## Authentication
+
+This API uses JWT (JSON Web Tokens) for authentication. All book endpoints require a valid JWT token.
+
+### Getting Started
+
+1. **Register a new user** to get your first token
+2. **Login** to get a new token
+3. **Include the token** in the Authorization header for all protected requests
+
+### Authentication Endpoints
+
+#### Register User
+**POST** `/api/auth/register`
+
+Creates a new user account and returns a JWT token.
+
+**Request Body:**
+```json
+{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123",
+    "password_confirmation": "password123"
+}
+```
+
+**Response:**
+```json
+{
+    "message": "User successfully registered",
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "created_at": "2025-01-20T10:00:00.000000Z",
+        "updated_at": "2025-01-20T10:00:00.000000Z"
+    },
+    "authorization": {
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+        "type": "bearer"
+    }
+}
+```
+
+#### Login
+**POST** `/api/auth/login`
+
+Authenticates a user and returns a JWT token.
+
+**Request Body:**
+```json
+{
+    "email": "john@example.com",
+    "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+    "token_type": "bearer",
+    "expires_in": 3600,
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+    }
+}
+```
+
+#### Get User Profile
+**GET** `/api/auth/user-profile`
+
+Returns the authenticated user's profile information.
+
+**Headers:**
+```
+Authorization: Bearer {your_jwt_token}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2025-01-20T10:00:00.000000Z",
+    "updated_at": "2025-01-20T10:00:00.000000Z"
+}
+```
+
+#### Refresh Token
+**POST** `/api/auth/refresh`
+
+Refreshes the JWT token.
+
+**Headers:**
+```
+Authorization: Bearer {your_jwt_token}
+```
+
+**Response:**
+```json
+{
+    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+    "token_type": "bearer",
+    "expires_in": 3600,
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+    }
+}
+```
+
+#### Logout
+**POST** `/api/auth/logout`
+
+Invalidates the current JWT token.
+
+**Headers:**
+```
+Authorization: Bearer {your_jwt_token}
+```
+
+**Response:**
+```json
+{
+    "message": "User successfully signed out"
+}
+```
+
+### Using JWT Tokens
+
+For all protected endpoints, include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer {your_jwt_token}
+```
+
+**Example with cURL:**
+```bash
+curl -X GET "http://localhost:8000/api/books" \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json"
+```
+
+### Error Responses
+
+#### Unauthorized (401)
+```json
+{
+    "status": "Token is Invalid"
+}
+```
+
+```json
+{
+    "status": "Token is Expired"
+}
+```
+
+```json
+{
+    "status": "Authorization Token not found"
+}
+```
 
 ## Base URL
 ```
 https://books-api.test
 ```
 
-## Endpoints
+## Protected Endpoints
+
+All book endpoints require JWT authentication. Include the token in the Authorization header.
 
 ### 1. Get All Books
 **GET** `/api/books`
