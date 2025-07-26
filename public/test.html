@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books API Test</title>
+    <title>Books API Test - JWT Authentication</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,6 +33,37 @@
             color: #555;
             margin-top: 0;
         }
+        .auth-section {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+        .auth-section h2 {
+            color: #28a745;
+        }
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        .token-status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .token-valid {
+            background: #d4edda;
+            color: #155724;
+        }
+        .token-invalid {
+            background: #f8d7da;
+            color: #721c24;
+        }
         button {
             background: #007bff;
             color: white;
@@ -44,6 +75,18 @@
         }
         button:hover {
             background: #0056b3;
+        }
+        .auth-btn {
+            background: #28a745;
+        }
+        .auth-btn:hover {
+            background: #218838;
+        }
+        .logout-btn {
+            background: #dc3545;
+        }
+        .logout-btn:hover {
+            background: #c82333;
         }
         .form-group {
             margin-bottom: 15px;
@@ -113,106 +156,169 @@
         .delete-btn:hover {
             background: #c82333;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📚 Books API Test Interface</h1>
+        <h1>🔐 Books API Test Interface - JWT Authentication</h1>
         
-        <!-- Get All Books Section -->
-        <div class="section">
-            <h2>1. Get All Books</h2>
-            <button onclick="getAllBooks()">Get All Books</button>
-            <div id="allBooksResponse" class="response" style="display: none;"></div>
-            <div id="booksGrid" class="books-grid"></div>
+        <!-- Authentication Section -->
+        <div class="section auth-section">
+            <h2>🔑 Authentication</h2>
+            <div id="authStatus">
+                <span class="token-status token-invalid">Not Authenticated</span>
+            </div>
+            <div id="tokenDisplay" class="token-display hidden"></div>
+            
+            <!-- Register Form -->
+            <div id="registerForm">
+                <h3>Register New User</h3>
+                <div class="form-group">
+                    <label for="regName">Name:</label>
+                    <input type="text" id="regName" placeholder="Your name" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password:</label>
+                    <input type="password" id="regPassword" placeholder="Password" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPasswordConfirm">Confirm Password:</label>
+                    <input type="password" id="regPasswordConfirm" placeholder="Confirm password" required>
+                </div>
+                <button onclick="register()" class="auth-btn">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h3>Login</h3>
+                <div class="form-group">
+                    <label for="loginEmail">Email:</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                </div>
+                <button onclick="login()" class="auth-btn">Login</button>
+            </div>
+
+            <!-- Logout Button -->
+            <div id="logoutSection" class="hidden">
+                <button onclick="logout()" class="logout-btn">Logout</button>
+                <button onclick="refreshToken()" class="auth-btn">Refresh Token</button>
+                <button onclick="getUserProfile()" class="auth-btn">Get Profile</button>
+            </div>
+
+            <div id="authResponse" class="response" style="display: none;"></div>
         </div>
 
-        <!-- Get Single Book Section -->
-        <div class="section">
-            <h2>2. Get Single Book</h2>
-            <div class="form-group">
-                <label for="bookId">Book ID:</label>
-                <input type="number" id="bookId" value="1" min="1">
+        <!-- API Sections (Hidden until authenticated) -->
+        <div id="apiSections" class="hidden">
+            <!-- Get All Books Section -->
+            <div class="section">
+                <h2>1. Get All Books</h2>
+                <button onclick="getAllBooks()">Get All Books</button>
+                <div id="allBooksResponse" class="response" style="display: none;"></div>
+                <div id="booksGrid" class="books-grid"></div>
             </div>
-            <button onclick="getSingleBook()">Get Book</button>
-            <div id="singleBookResponse" class="response" style="display: none;"></div>
-        </div>
 
-        <!-- Search Books Section -->
-        <div class="section">
-            <h2>3. Search Books</h2>
-            <div class="form-group">
-                <label for="searchTerm">Search Term:</label>
-                <input type="text" id="searchTerm" placeholder="Enter title, author, or description">
+            <!-- Get Single Book Section -->
+            <div class="section">
+                <h2>2. Get Single Book</h2>
+                <div class="form-group">
+                    <label for="bookId">Book ID:</label>
+                    <input type="number" id="bookId" value="1" min="1">
+                </div>
+                <button onclick="getSingleBook()">Get Book</button>
+                <div id="singleBookResponse" class="response" style="display: none;"></div>
             </div>
-            <button onclick="searchBooks()">Search</button>
-            <div id="searchResponse" class="response" style="display: none;"></div>
-        </div>
 
-        <!-- Create Book Section -->
-        <div class="section">
-            <h2>4. Create New Book</h2>
-            <div class="form-group">
-                <label for="newTitle">Title:</label>
-                <input type="text" id="newTitle" placeholder="Book title" required>
+            <!-- Search Books Section -->
+            <div class="section">
+                <h2>3. Search Books</h2>
+                <div class="form-group">
+                    <label for="searchTerm">Search Term:</label>
+                    <input type="text" id="searchTerm" placeholder="Enter title, author, or description">
+                </div>
+                <button onclick="searchBooks()">Search</button>
+                <div id="searchResponse" class="response" style="display: none;"></div>
             </div>
-            <div class="form-group">
-                <label for="newAuthor">Author:</label>
-                <input type="text" id="newAuthor" placeholder="Author name" required>
-            </div>
-            <div class="form-group">
-                <label for="newDescription">Description:</label>
-                <textarea id="newDescription" placeholder="Book description" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="newIsbn">ISBN:</label>
-                <input type="text" id="newIsbn" placeholder="9781234567890">
-            </div>
-            <div class="form-group">
-                <label for="newYear">Published Year:</label>
-                <input type="number" id="newYear" placeholder="2024" min="1800" max="2030">
-            </div>
-            <div class="form-group">
-                <label for="newPrice">Price:</label>
-                <input type="number" id="newPrice" placeholder="19.99" step="0.01" min="0">
-            </div>
-            <button onclick="createBook()">Create Book</button>
-            <div id="createResponse" class="response" style="display: none;"></div>
-        </div>
 
-        <!-- Update Book Section -->
-        <div class="section">
-            <h2>5. Update Book</h2>
-            <div class="form-group">
-                <label for="updateId">Book ID:</label>
-                <input type="number" id="updateId" placeholder="1" min="1">
+            <!-- Create Book Section -->
+            <div class="section">
+                <h2>4. Create New Book</h2>
+                <div class="form-group">
+                    <label for="newTitle">Title:</label>
+                    <input type="text" id="newTitle" placeholder="Book title" required>
+                </div>
+                <div class="form-group">
+                    <label for="newAuthor">Author:</label>
+                    <input type="text" id="newAuthor" placeholder="Author name" required>
+                </div>
+                <div class="form-group">
+                    <label for="newDescription">Description:</label>
+                    <textarea id="newDescription" placeholder="Book description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="newIsbn">ISBN:</label>
+                    <input type="text" id="newIsbn" placeholder="9781234567890">
+                </div>
+                <div class="form-group">
+                    <label for="newYear">Published Year:</label>
+                    <input type="number" id="newYear" placeholder="2024" min="1800" max="2030">
+                </div>
+                <div class="form-group">
+                    <label for="newPrice">Price:</label>
+                    <input type="number" id="newPrice" placeholder="19.99" step="0.01" min="0">
+                </div>
+                <button onclick="createBook()">Create Book</button>
+                <div id="createResponse" class="response" style="display: none;"></div>
             </div>
-            <div class="form-group">
-                <label for="updateTitle">New Title:</label>
-                <input type="text" id="updateTitle" placeholder="Updated title">
-            </div>
-            <div class="form-group">
-                <label for="updatePrice">New Price:</label>
-                <input type="number" id="updatePrice" placeholder="24.99" step="0.01" min="0">
-            </div>
-            <button onclick="updateBook()">Update Book</button>
-            <div id="updateResponse" class="response" style="display: none;"></div>
-        </div>
 
-        <!-- Delete Book Section -->
-        <div class="section">
-            <h2>6. Delete Book</h2>
-            <div class="form-group">
-                <label for="deleteId">Book ID:</label>
-                <input type="number" id="deleteId" placeholder="1" min="1">
+            <!-- Update Book Section -->
+            <div class="section">
+                <h2>5. Update Book</h2>
+                <div class="form-group">
+                    <label for="updateId">Book ID:</label>
+                    <input type="number" id="updateId" placeholder="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="updateTitle">New Title:</label>
+                    <input type="text" id="updateTitle" placeholder="Updated title">
+                </div>
+                <div class="form-group">
+                    <label for="updatePrice">New Price:</label>
+                    <input type="number" id="updatePrice" placeholder="24.99" step="0.01" min="0">
+                </div>
+                <button onclick="updateBook()">Update Book</button>
+                <div id="updateResponse" class="response" style="display: none;"></div>
             </div>
-            <button onclick="deleteBook()" class="delete-btn">Delete Book</button>
-            <div id="deleteResponse" class="response" style="display: none;"></div>
+
+            <!-- Delete Book Section -->
+            <div class="section">
+                <h2>6. Delete Book</h2>
+                <div class="form-group">
+                    <label for="deleteId">Book ID:</label>
+                    <input type="number" id="deleteId" placeholder="1" min="1">
+                </div>
+                <button onclick="deleteBook()" class="delete-btn">Delete Book</button>
+                <div id="deleteResponse" class="response" style="display: none;"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        const baseUrl = window.location.origin + '/api/books';
+        // Use the working Laravel development server
+        const baseUrl = 'http://localhost:8000/api';
+        let jwtToken = localStorage.getItem('jwt_token');
+        let user = JSON.parse(localStorage.getItem('user') || 'null');
 
         function showResponse(elementId, data, isSuccess = true) {
             const element = document.getElementById(elementId);
@@ -225,13 +331,46 @@
             document.getElementById(elementId).style.display = 'none';
         }
 
+        function updateAuthStatus() {
+            const authStatus = document.getElementById('authStatus');
+            const tokenDisplay = document.getElementById('tokenDisplay');
+            const apiSections = document.getElementById('apiSections');
+            const logoutSection = document.getElementById('logoutSection');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (jwtToken && user) {
+                authStatus.innerHTML = `<span class="token-status token-valid">Authenticated as ${user.name}</span>`;
+                tokenDisplay.textContent = `Token: ${jwtToken.substring(0, 50)}...`;
+                tokenDisplay.classList.remove('hidden');
+                apiSections.classList.remove('hidden');
+                logoutSection.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                authStatus.innerHTML = `<span class="token-status token-invalid">Not Authenticated</span>`;
+                tokenDisplay.classList.add('hidden');
+                apiSections.classList.add('hidden');
+                logoutSection.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.remove('hidden');
+            }
+        }
+
         async function makeRequest(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            // Add JWT token if available
+            if (jwtToken) {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+
             try {
                 const response = await fetch(url, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    },
+                    headers,
                     ...options
                 });
                 const data = await response.json();
@@ -241,9 +380,105 @@
             }
         }
 
+        async function register() {
+            const userData = {
+                name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value,
+                password_confirmation: document.getElementById('regPasswordConfirm').value
+            };
+
+            hideResponse('authResponse');
+            const result = await makeRequest(`${baseUrl}/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+
+            showResponse('authResponse', result.data, result.success);
+
+            if (result.success) {
+                jwtToken = result.data.authorization.token;
+                user = result.data.user;
+                localStorage.setItem('jwt_token', jwtToken);
+                localStorage.setItem('user', JSON.stringify(user));
+                updateAuthStatus();
+                
+                // Clear form
+                document.getElementById('regName').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regPasswordConfirm').value = '';
+            }
+        }
+
+        async function login() {
+            const loginData = {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            hideResponse('authResponse');
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify(loginData)
+            });
+
+            showResponse('authResponse', result.data, result.success);
+
+            if (result.success) {
+                jwtToken = result.data.access_token;
+                user = result.data.user;
+                localStorage.setItem('jwt_token', jwtToken);
+                localStorage.setItem('user', JSON.stringify(user));
+                updateAuthStatus();
+                
+                // Clear form
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        async function logout() {
+            const result = await makeRequest(`${baseUrl}/auth/logout`, {
+                method: 'POST'
+            });
+
+            if (result.success) {
+                jwtToken = null;
+                user = null;
+                localStorage.removeItem('jwt_token');
+                localStorage.removeItem('user');
+                updateAuthStatus();
+                showResponse('authResponse', result.data, true);
+            } else {
+                showResponse('authResponse', result.data, false);
+            }
+        }
+
+        async function refreshToken() {
+            const result = await makeRequest(`${baseUrl}/auth/refresh`, {
+                method: 'POST'
+            });
+
+            showResponse('authResponse', result.data, result.success);
+
+            if (result.success) {
+                jwtToken = result.data.access_token;
+                user = result.data.user;
+                localStorage.setItem('jwt_token', jwtToken);
+                localStorage.setItem('user', JSON.stringify(user));
+                updateAuthStatus();
+            }
+        }
+
+        async function getUserProfile() {
+            const result = await makeRequest(`${baseUrl}/auth/user-profile`);
+            showResponse('authResponse', result.data, result.success);
+        }
+
         async function getAllBooks() {
             hideResponse('allBooksResponse');
-            const result = await makeRequest(baseUrl);
+            const result = await makeRequest(`${baseUrl}/books`);
             showResponse('allBooksResponse', result.data, result.success);
             
             if (result.success && result.data.data) {
@@ -277,14 +512,14 @@
         async function getSingleBook() {
             const bookId = document.getElementById('bookId').value;
             hideResponse('singleBookResponse');
-            const result = await makeRequest(`${baseUrl}/${bookId}`);
+            const result = await makeRequest(`${baseUrl}/books/${bookId}`);
             showResponse('singleBookResponse', result.data, result.success);
         }
 
         async function getSingleBookById(bookId) {
             hideResponse('singleBookResponse');
             document.getElementById('bookId').value = bookId;
-            const result = await makeRequest(`${baseUrl}/${bookId}`);
+            const result = await makeRequest(`${baseUrl}/books/${bookId}`);
             showResponse('singleBookResponse', result.data, result.success);
         }
 
@@ -295,7 +530,7 @@
                 return;
             }
             hideResponse('searchResponse');
-            const result = await makeRequest(`${baseUrl}/search?q=${encodeURIComponent(searchTerm)}`);
+            const result = await makeRequest(`${baseUrl}/books/search?q=${encodeURIComponent(searchTerm)}`);
             showResponse('searchResponse', result.data, result.success);
         }
 
@@ -310,7 +545,7 @@
             };
 
             hideResponse('createResponse');
-            const result = await makeRequest(baseUrl, {
+            const result = await makeRequest(`${baseUrl}/books`, {
                 method: 'POST',
                 body: JSON.stringify(bookData)
             });
@@ -346,7 +581,7 @@
             }
 
             hideResponse('updateResponse');
-            const result = await makeRequest(`${baseUrl}/${bookId}`, {
+            const result = await makeRequest(`${baseUrl}/books/${bookId}`, {
                 method: 'PUT',
                 body: JSON.stringify(updateData)
             });
@@ -364,7 +599,7 @@
             }
             
             hideResponse('deleteResponse');
-            const result = await makeRequest(`${baseUrl}/${bookId}`, {
+            const result = await makeRequest(`${baseUrl}/books/${bookId}`, {
                 method: 'DELETE'
             });
             showResponse('deleteResponse', result.data, result.success);
@@ -379,7 +614,7 @@
                 return;
             }
             
-            const result = await makeRequest(`${baseUrl}/${bookId}`, {
+            const result = await makeRequest(`${baseUrl}/books/${bookId}`, {
                 method: 'DELETE'
             });
             
@@ -390,9 +625,12 @@
             }
         }
 
-        // Load books on page load
+        // Initialize on page load
         window.onload = function() {
-            getAllBooks();
+            updateAuthStatus();
+            if (jwtToken && user) {
+                getAllBooks();
+            }
         };
     </script>
 </body>
